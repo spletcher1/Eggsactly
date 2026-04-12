@@ -110,7 +110,7 @@ class EggModel:
         self.device = torch.device(device)
 
         cfg = Config(config_path or DEFAULT_CONFIG_NAME, n_channel_in=n_channel_in)
-        model = SplineDist2D(cfg)
+        model = SplineDist2D(cfg, train=False)
         if self.device.type == "cuda":
             model.cuda()
         else:

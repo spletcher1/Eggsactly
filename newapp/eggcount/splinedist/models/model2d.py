@@ -455,11 +455,9 @@ class SplineDist2D(nn.Module):
         x = resizer.before(x, axes_net, axes_net_div_by)
 
         def predict_direct(tile: np.ndarray):
-            # nonlocal total_cuda_time
-            # start_t = timeit.default_timer()
             tile = tile[np.newaxis]
-            prob, dist = self(torch.from_numpy(tile).permute(0, 3, 1, 2).cuda())
-            # total_cuda_time += timeit.default_timer() - start_t
+            _device = next(self.parameters()).device
+            prob, dist = self(torch.from_numpy(tile).permute(0, 3, 1, 2).to(_device))
             return prob[0].permute(1, 2, 0), dist[0].permute(1, 2, 0)
 
         if np.prod(n_tiles) > 1:
@@ -469,7 +467,7 @@ class SplineDist2D(nn.Module):
             )  # numerical axis ids for x
             axes_net_tile_overlaps = self._axes_tile_overlap(axes_net)
             # hack: permute tiling axis in the same way as img -> x was permuted
-            n_tiles = _permute_axes(np.empty(n_tiles, np.bool)).shape
+            n_tiles = _permute_axes(np.empty(n_tiles, bool)).shape
             (
                 all(n_tiles[i] == 1 for i in range(x.ndim) if i not in x_tiling_axis)
                 or _raise(

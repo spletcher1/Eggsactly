@@ -37,7 +37,6 @@ if str(_NEWAPP_ROOT) not in sys.path:
 
 from eggcount.splinedist.config import Config
 from eggcount.splinedist.models.model2d import SplineDist2D
-from eggcount.splinedist.utils import get_contoursize_max
 
 from augment import default_augmenter
 from dataset import SplineDistPatchDataset, load_image_label_pairs
@@ -152,10 +151,19 @@ def main(argv: list[str] | None = None) -> int:
         val_dir / "images", val_dir / "labels"
     )
 
-    # ---- Compute contoursize_max from training labels ----
-    print("computing contoursize_max from training labels...")
-    contoursize_max = int(get_contoursize_max(Y_trn))
-    print(f"contoursize_max = {contoursize_max}")
+    # ---- Determine contoursize_max ----
+    # contoursize_max must equal n_control_points (from the config) so that
+    # the training targets have the same number of channels as the model's
+    # output layer. The model predicts n_params = 2 * n_control_points values
+    # per pixel, so spline_dist must sample exactly n_control_points contour
+    # points to produce matching 2 * n_control_points target channels.
+    #
+    # Note: get_contoursize_max(Y_trn) returns the raw contour length in
+    # pixels (often hundreds) — that is NOT the right value here.
+    _temp_cfg = Config(args.config, n_channel_in=3, contoursize_max=1)
+    n_control_points = _temp_cfg.n_params // 2  # n_params = 2 * n_control_points
+    contoursize_max = n_control_points
+    print(f"n_control_points = {n_control_points}, contoursize_max = {contoursize_max}")
 
     # ---- Build model ----
     config = Config(args.config, n_channel_in=3, contoursize_max=contoursize_max)

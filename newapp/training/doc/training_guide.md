@@ -131,7 +131,7 @@ python train.py my_dataset/ \
 
 ### What happens during training
 
-1. **contoursize_max** is computed from your training labels. This measures the longest object contour in the dataset and sizes the model's output accordingly.
+1. **contoursize_max** is set to `n_control_points` from the config (default: 8). This ensures the training targets have the same number of channels as the model's output layer. For each foreground pixel, the target is 8 uniformly-sampled contour points of the object it belongs to (8 points x 2 coords = 16 values, matching the model's 16-channel output).
 2. Random 160x160 patches are sampled from your images, biased toward patches that contain eggs (90% foreground / 10% random).
 3. Each patch is augmented (random flips, rotations, brightness/contrast jitter).
 4. The model predicts probability maps and spline-distance parameters for each patch.
@@ -170,7 +170,7 @@ epoch  200/400  train_loss=0.0312  val_loss=0.0487  val_mae=0.35  lr=3.00e-05  (
 | train_loss drops, val_loss doesn't | Overfitting | Add more data; reduce epochs |
 | val_mae > 3 after 200 epochs | Patch size might be too small for your eggs | Increase `train_patch_size` in config |
 | CUDA OOM during training | Batch size too large | Reduce `--batch-size` to 2 or 1 |
-| Very slow (~10+ min/epoch on GPU) | contoursize_max is huge | Your labels may have very large objects; crop to just the egg-laying region |
+| Shape mismatch error in loss | Config mismatch between model and targets | Ensure you haven't manually set `contoursize_max` to something other than `n_control_points` |
 
 ### Tuning the config
 
@@ -178,7 +178,7 @@ The default config ([newapp/configs/unet_backbone_rand_zoom.json](../../configs/
 
 - **`train_patch_size`**: default `[160, 160]`. Increase if your eggs are larger than ~80px. The patch must be big enough to contain at least one whole egg.
 - **`backbone`**: `"unet_full"` (default, more accurate) or `"unet_reduced"` (3x faster inference, slightly less accurate).
-- **`n_control_points`**: default 8. Increase to 12 or 16 if your eggs have complex shapes (e.g., elongated or irregular). For roughly round eggs, 8 is plenty.
+- **`n_control_points`**: default 8. Increase to 12 or 16 if your eggs have complex shapes (e.g., elongated or irregular). For roughly round eggs, 8 is plenty. Note: changing this also changes `contoursize_max` (they must match), so retrain from scratch if you change it — you can't resume from a checkpoint trained with a different value.
 - **`zoom_min` / `zoom_max`**: default `0.9` / `1.1`. Widens to `0.7` / `1.3` if your images have significant scale variation.
 
 ## Step 5: Validate and deploy
@@ -240,7 +240,7 @@ This active-learning loop typically cuts total labeling effort by 3–5x.
 No. The arena model was only needed in the upstream web app to find well locations automatically. In newapp, you supply bounding boxes yourself via `detect_regions()` in [eggcount/chamber_detection.py](../../eggcount/chamber_detection.py). The only model you train is the egg counter.
 
 **Q: Can I fine-tune the upstream model instead of training from scratch?**
-Yes — pass `--resume path/to/upstream_model.pth` to `train.py`. The upstream model was trained on *Drosophila* eggs, so if yours look similar, fine-tuning converges much faster than starting from random weights.
+Yes, and this is **recommended as the default approach** — pass `--resume path/to/upstream_model.pth` to `train.py`. The upstream model was trained on *Drosophila* eggs, so if yours look similar, fine-tuning converges much faster than starting from random weights. Fine-tuning is also more forgiving of any subtle differences in how the training targets are represented.
 
 **Q: My eggs are smaller/larger than the upstream ones. What do I change?**
 Adjust `train_patch_size` in your config. The patch must be large enough to contain at least one egg with some margin. For very small eggs (< 20px), the default 160x160 is fine. For eggs > 80px, increase to 256x256 or larger — but you may need to reduce batch size to avoid OOM.
