@@ -27,7 +27,9 @@ class GPUTaskGroup:
             self.notify_complete()
 
     def notify_complete(self):
-        notify_args = {k: [] for k in self.results[0].keys() if len(self.results[0][k])}
+        # Include every key from the task result, even when empty (e.g. predictions=[]),
+        # so listeners still receive required keyword args like predictions=.
+        notify_args = {k: [] for k in self.results[0].keys()}
         for result in self.results:
             for k in notify_args:
                 if (

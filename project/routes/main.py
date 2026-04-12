@@ -179,7 +179,10 @@ def save_img_as_sql_blob(sid, file, file_path):
         data=request.files[file].read(),
         format=os.path.splitext(file_path)[1][1:],
     )
-    EggLayingImage(image=data, basename=os.path.basename(file_path), user=user)
+    img = EggLayingImage(
+        image=data, basename=os.path.basename(file_path), user=user
+    )
+    db.session.add(img)
     db.session.commit()
 
 

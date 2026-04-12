@@ -53,10 +53,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = sql_addr
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 app.config["SESSION_TYPE"] = flask_session_type
-session = Session(app)
 if flask_session_type == "sqlalchemy":
-    with app.app_context():
-        session.app.session_interface.db.create_all()
+    app.config["SESSION_SQLALCHEMY"] = db
+session = Session(app)
 socketio_kwargs = dict(manage_session=False)
 if SOCKETIO_POLLING_ONLY:
     socketio_kwargs.update(transports=['polling'], allow_upgrades=False)

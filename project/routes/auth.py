@@ -3,15 +3,24 @@ from flask_dance.contrib.google import google
 from flask_login import current_user, login_required, login_user, logout_user
 import json
 import os
+from pathlib import Path
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from project import app, db
 from project.lib.datamanagement.models import User, login_google_user
 from project.lib.users import users
 
+_CONFIG_DIR = Path(__file__).resolve().parent.parent / "configs"
+for _name in ("privileged_ips.json", "privileged_ips.json.example"):
+    _path = _CONFIG_DIR / _name
+    if _path.is_file():
+        with open(_path) as f:
+            privileged_ips = json.load(f)
+        break
+else:
+    privileged_ips = {"v4": [], "v6": []}
+
 auth = Blueprint("auth", __name__)
-with open("project/configs/privileged_ips.json") as f:
-    privileged_ips = json.load(f)
 
 
 @auth.route("/check_request_origin", methods=["POST"])

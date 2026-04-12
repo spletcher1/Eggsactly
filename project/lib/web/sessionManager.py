@@ -131,7 +131,7 @@ class SessionManager:
     def enqueue_egg_counting_task(self, img_path, alignment_data):
         self.gpu_manager.add_task(self.counting_task_group, img_path, alignment_data)
 
-    def segment_image_via_object_detection(self, img_path, predictions):
+    def segment_image_via_object_detection(self, img_path, predictions, **kwargs):
         imgBasename = os.path.basename(img_path)
         try:
             (circles, avgDists, numRowsCols, rotationAngle, _) = self.cfs[

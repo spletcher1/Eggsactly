@@ -8,6 +8,7 @@ import json
 import jwt
 import numpy as np
 import os
+from pathlib import Path
 import requests
 import time
 import timeit
@@ -28,14 +29,21 @@ from project.lib.web.gpu_task_types import GPUTaskTypes
 from project.lib.web.sessionManager import SessionManager
 
 
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _models_dir() -> Path:
+    return _PROJECT_ROOT / "models"
+
+
 NETWORK_CONSTS = {
     GPUTaskTypes.arena: {
-        "wts": "project/models/arena_pit_v2.pth",
+        "wts": _models_dir() / "arena_pit_v2.pth",
         "config": "project/configs/unet_reduced_backbone_arena_wells.json",
     },
     GPUTaskTypes.egg: {
-        "wts": "project/models/"
-        + "splinedist_unet_full_400epochs_NZXT-U_2021-08-12 08-39-05.733572.pth",
+        "wts": _models_dir()
+        / "splinedist_unet_full_400epochs_NZXT-U_2021-08-12 08-39-05.733572.pth",
         "config": "project/configs/unet_backbone_rand_zoom.json",
     },
 }
@@ -71,7 +79,7 @@ request_headers = {"Authorization": f"access_token {key_holder.get_jwt()}"}
 active_tasks = {}
 networks = {}
 pauser = PythonPauser()
-with open("project/models/modelRevDates.json", "r") as f:
+with open(_models_dir() / "modelRevDates.json", "r") as f:
     model_to_update_date = json.load(f)
     latest_model = model_to_update_date["models"].get(
         model_to_update_date["latest"], "unknown"
@@ -292,12 +300,18 @@ def init_networks():
 
 
 def init_splinedist_network(type):
+    wts_path = NETWORK_CONSTS[type]["wts"]
+    if not Path(wts_path).is_file():
+        raise FileNotFoundError(
+            f"Missing GPU model weights: {wts_path}\n"
+            "Trained .pth files are not in git (see .gitignore); copy them into project/models/."
+        )
     networks[type] = SplineDist2D(
         Config(NETWORK_CONSTS[type]["config"], n_channel_in=3)
     )
     networks[type].cuda()
     networks[type].train(False)
-    networks[type].load_state_dict(load_state_dict_compat(NETWORK_CONSTS[type]["wts"]))
+    networks[type].load_state_dict(load_state_dict_compat(str(wts_path)))
 
 
 init_networks()

@@ -1,0 +1,31 @@
+[project]
+name = "eggcount-local"
+version = "0.1.0"
+description = "Local egg-counting pipeline — a standalone extraction of the Eggsactly core."
+readme = "README.md"
+requires-python = ">=3.11"
+
+# Pins match the upstream requirements.3.13.txt so behavior stays consistent
+# with the tested parent project. Bump freely as needed.
+dependencies = [
+    "csbdeep==0.8.2",
+    "numpy==2.3.5",
+    "opencv-python==4.13.0.92",
+    "Pillow==12.1.0",
+    "scikit-image==0.26.0",
+    "scipy==1.17.0",
+    "tqdm==4.65.0",
+
+    # torch is listed here so `uv sync` produces a working environment out
+    # of the box with the default CPU wheel. If you need CUDA inference,
+    # override torch with the matching wheel for your CUDA version — e.g.
+    #     uv pip install --index-url https://download.pytorch.org/whl/cu124 torch
+    # or configure [tool.uv.sources] in your own fork.
+    "torch>=2.1",
+]
+
+[tool.uv]
+# This is an application, not a library — tell uv not to try to build it
+# as a wheel when syncing. `uv sync` will create a .venv here and install
+# the dependencies above without attempting to package eggcount itself.
+package = false
