@@ -11,9 +11,9 @@ dependencies = [
     "csbdeep==0.8.2",
     "numpy==2.3.5",
     "opencv-python==4.13.0.92",
-    "Pillow==12.1.0",
     "scikit-image==0.26.0",
     "scipy==1.17.0",
+    "stardist==0.9.2",
     "tqdm==4.65.0",
 
     # torch is listed here so `uv sync` produces a working environment out
